@@ -1,9 +1,9 @@
+/*Block destroyer game. Copyright Jiri Roznovjak, September 2014.*/
 function sketchProc(processing) {
 var cWidth = 800;
 var cHeight = 600;
 processing.size(cWidth,cHeight);
 processing.background(100,10,200);
-/*Block destroyer game in development. Copyright Jiri Roznovjak 2014.*/
 
 processing.noStroke();
 processing.rectMode(processing.CENTER);
