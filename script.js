@@ -1,4 +1,4 @@
-/*Block destroyer game. Jiri Roznovjak, September 2014.*/
+/*Brick destroyer game. Jiri Roznovjak, September 2014.*/
 function sketchProc(processing) {
 var WIDTH = 800;
 var HEIGHT = 600;
@@ -43,6 +43,13 @@ var Game = function () {
     this.balls = [];
 };
 
+Game.prototype.newGame = function () {
+    this.state = 1;
+    this.level = 1;
+    this.lifes = 3;
+    this.newLevel();
+};
+
 //runs level in the draw function
 Game.prototype.runLevel = function() {
     processing.background(252, 251, 194);
@@ -58,9 +65,9 @@ Game.prototype.runLevel = function() {
         this.bricks[i].run();
         for (var j = 0; j< this.balls.length; j++) {
             if (this.balls[j].checkCollision(this.bricks[i])) {
-                if (Math.random() < 0.01) {
-                    this.balls.push(new Ball(this.bricks[i].position.x,
-                        this.bricks[i].position.y,Math.random()*(-7),-7));
+                if (Math.random() < this.getpNewBall()) {
+                    this.createBall(this.bricks[i].position.x,
+                        this.bricks[i].position.y,Math.random()*(-7));
                 }
                 this.balls[j].collide(this.bricks[i]);
                 this.bricks.splice(i,1);
@@ -76,6 +83,10 @@ Game.prototype.runLevel = function() {
         if (this.balls[k].checkCollision(this.bouncer)) {
             this.balls[k].collideBouncer(this.bouncer);
         }
+        if (this.balls[k].checkMissed()) {
+            this.missedBall();
+            this.balls.splice(k,1);
+        }
     }
     processing.fill(255, 0, 0);
     for (var heart = 0; heart < this.lifes; heart++){
@@ -89,7 +100,7 @@ Game.prototype.newLevel = function() {
     this.bouncer = new Bouncer();
     this.bricks = [];
     this.balls = [];
-    this.balls.push(new Ball(WIDTH/2,2*HEIGHT/3,Math.random()*5,-7));
+    this.createBall(WIDTH/2,2*HEIGHT/3,Math.random()*5);
     for (var x = 0; x < 9; x++) {
         for (var y = 0; y < this.level + 2; y++) {
             this.bricks.push(new Brick(75+x*80,40+y*40,70,30));
@@ -145,6 +156,27 @@ Game.prototype.displayText = function (text,x,y,size,color) {
     processing.text(text,x,y);
 };
 
+Game.prototype.missedBall = function () {
+    this.lifes--;
+    if (this.lifes < 0) {
+        this.state = 3;
+        return;
+    }
+    if (this.balls.length === 1) {
+        if (Math.random() > 0.5) {var direction = 1;} else {var direction = 0;}
+        this.createBall(WIDTH/2, HEIGHT/2, Math.random()*8*direction);
+    }
+};
+
+Game.prototype.createBall = function (x,y,velx) {
+    this.balls.push(new Ball(x,y,velx,-7));
+};
+
+Game.prototype.getpNewBall = function () {
+    return this.level * 0.01;
+};
+
+
 var Bouncer = function() {
     this.position = new processing.PVector(WIDTH/2,7*HEIGHT/8);
     this.width = 160;
@@ -182,22 +214,16 @@ Ball.prototype.update = function() {
 };
 
 Ball.prototype.checkEdges = function(){
-    if (this.position.x<this.radius || this.position.x > WIDTH-this.radius) {
+    if (this.position.x < this.radius || this.position.x > WIDTH-this.radius) {
         this.velocity.x *= -1;
     }
     if (this.position.y < this.radius) {
         this.velocity.y *= -1;
     }
-    if (this.position.y>HEIGHT+this.radius) {
-        game.lifes--;
-        this.position.y = -500;
-        this.velocity.y = 0;
-        if (Math.random() > 0.5) {var direction = 1;} else {var direction = 0;}
-        game.balls.push(new Ball(WIDTH/2,HEIGHT/2,Math.random() * 8 * direction,-7));
-        if (game.lifes < 0) {
-            game.state = 3;
-        }
-    }
+};
+
+Ball.prototype.checkMissed = function () {
+    return (this.position.y > HEIGHT+this.radius);
 };
 
 Ball.prototype.checkCollision = function(obstacle) {
@@ -256,9 +282,7 @@ processing.mouseClicked = function() {
     //initial screen
     if (game.state === 0) {
         if (game.newGameBox.checkMouse()) {
-            game.lifes = 3;
-            game.state = 1;
-            game.newLevel();
+            game.newGame();
         }
     }
     //game
@@ -293,7 +317,7 @@ processing.draw = function() {
     }
     //game
     else if (game.state === 1) {
-        if (game.bricks.length === 0) { //game
+        if (game.bricks.length === 0) {
             game.level++;
             game.newLevel();
         }
